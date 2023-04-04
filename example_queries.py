@@ -126,7 +126,7 @@ def aimd_premature_loss(timeout=60):
                 v.S[t + 1 - c.R] - v.S[t - c.R] >=
                 c.C + 1,  # Burst of BDP acks
                 v.A[t + 1] >=
-                v.A[t] + 2 - 1e-6  # Sum of the two bursts (- epsilon)
+                v.A[t] + 2 # - 1e-6  # Sum of the two bursts (- epsilon)
             ))
 
     # We don't want an example with timeouts

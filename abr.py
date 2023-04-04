@@ -39,6 +39,11 @@ class BufferBasedVariables:
         self.Ch_t = [0] + \
             [s.Real(f"chunk_thresh_{ac.n},{i+1}") for i in range(ac.N_c-1)]
 
+        # Playback buffer should not go to 0 for more than x amount of time when started from a "good" state
+        # Rebuffering---
+
+        # Instability
+
         # Playback buffer length at time t
         self.b = [s.Real(f"buffer_{ac.n},{t}") for t in range(c.T)]
         # Cumulative number of bytes (from the beginning) to be downloaded for

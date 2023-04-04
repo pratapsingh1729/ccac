@@ -18,7 +18,7 @@ def can_incr(
         v: Variables,
         cv: AIMDVariables):
     # Always increase
-    if c.aimd_incr_irrespective:
+    if c.aimd_incr_irrespective: # if true, essentially becomes like cubic --- growth function is of time rather than bytes acked
         for n in range(c.N):
             for t in range(c.T):
                 s.add(cv.incr_f[n][t])
