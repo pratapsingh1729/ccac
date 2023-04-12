@@ -71,8 +71,8 @@ def initial(ac: BufferBasedConfig, av: BufferBasedVariables, c: ModelConfig,
 def monotone(ac: BufferBasedConfig, av: BufferBasedVariables, c: ModelConfig,
              s: MySolver, v: variables.Variables):
     for i in range(1, ac.N_c):
-        s.add(av.Ch_s[i - 1] <= av.Ch_s[i])
-        s.add(av.Ch_t[i - 1] <= av.Ch_t[i])
+        s.add(av.Ch_s[i - 1] < av.Ch_s[i])
+        s.add(av.Ch_t[i - 1] < av.Ch_t[i])
 
     for t in range(1, c.T):
         s.add(av.snd[t - 1] <= av.snd[t])

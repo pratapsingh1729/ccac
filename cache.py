@@ -82,7 +82,7 @@ def run_query(
         (s.to_smt2() + str(cfg.simplify)).encode("utf-8")
     ).digest().hex()[:16]
     fname = dir + "/" + s_hash + ".cached"
-    print(f"Cache file name: {fname}")
+    # print(f"Cache file name: {fname}")
     if not cfg.unsat_core and os.path.exists(fname):
         # Read cached
         try:
@@ -90,12 +90,12 @@ def run_query(
             res: QueryResult = pkl.load(f)
             if res.timeout is None:
                 # We got the result last time. Just return it
-                print("Cache hit")
+                # print("Cache hit")
                 return res
             elif res.timeout >= timeout:
                 # Was the timeout last time >= timeout now? If so, we'll just
                 # timeout again. So return what we had last time
-                print("Cache hit")
+                # print("Cache hit")
                 return res
         except Exception as e:
             print("Warning: exception while opening cached file %s" % fname)
