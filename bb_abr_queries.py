@@ -55,10 +55,10 @@ def run_abr_utilization_query(cca, abr, compose, utilization_threshold):
     s.add(v.A_f[0][0] == v.c_f[0][0]) 
 
 
-    # Require chunk sizes to be comparable to link rate (smallest chunk size at least half the link rate, largest at least 1.5x the link rate)
+    # Require chunk sizes to be comparable to BDP (smallest chunk size at least half the BDP, largest at least 1.5x the BDP)
     if abr=="bb_abr":
-        s.add(v.av[0].Ch_s[0] >= max(0.5, utilization_threshold) * c.C)
-        s.add(v.av[0].Ch_s[-1] >= 1.5 * c.C)
+        s.add(v.av[0].Ch_s[0] >= max(0.5, utilization_threshold) * c.C * (c.R + c.D))
+        s.add(v.av[0].Ch_s[-1] >= 1.5 * c.C * (c.R + c.D))
 
 
     # We don't want an example with timeouts
