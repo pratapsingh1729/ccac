@@ -8,9 +8,7 @@ from plot import plot_model
 
 
 
-
-
-def run_abr_utilization_query(cca, abr, utilization_threshold):
+def run_abr_utilization_query(cca, abr, compose, utilization_threshold):
     from cache import run_query
     from utils import make_periodic
 
@@ -19,11 +17,11 @@ def run_abr_utilization_query(cca, abr, utilization_threshold):
                     R=1,
                     T=10,
                     C=1,
-                    buf_min=2,
+                    buf_min=1,
                     buf_max=None, # infinity
                     dupacks=None,
                     cca=cca, # only rocc and aimd are good in the compose=true model, copa in compose=false
-                    compose=False, # whether the model admits multiple network elements (composition property)
+                    compose=compose, # whether the model admits multiple network elements (composition property)
                     alpha=None,
                     pacing=False,
                     epsilon="zero",
@@ -50,13 +48,18 @@ def run_abr_utilization_query(cca, abr, utilization_threshold):
     # Query: Low throughput and low cwnd
     s, v = make_solver(c)
     # dur = v.cv.dur
-    # s.add(v.alpha < 2)
 
     # Require a small alpha (i.e. a high link rate in terms of MSS/timestep)
     s.add(v.alpha <= 0.25 * c.C * c.R)
-    # s.add(v.L[0] == 0)
+       
+    s.add(v.A_f[0][0] == v.c_f[0][0]) 
 
-    # s.add(v.A_f[0][0] == v.c_f[0][0]) 
+
+    # Require chunk sizes to be comparable to link rate (smallest chunk size at least half the link rate, largest at least 1.5x the link rate)
+    if abr=="bb_abr":
+        s.add(v.av[0].Ch_s[0] >= max(0.5, utilization_threshold) * c.C)
+        s.add(v.av[0].Ch_s[-1] >= 1.5 * c.C)
+
 
     # We don't want an example with timeouts
     for t in range(c.T):
@@ -71,14 +74,14 @@ def run_abr_utilization_query(cca, abr, utilization_threshold):
     #             # v.S[t+1] - v.S[t] <= utilization_threshold * c.C
     #         ))
     # s.add(Or(*conds))
-    s.add(v.S[-1] - v.S[0] < utilization_threshold * c.C * (c.T - 0))
+    s.add(v.S[-1] - v.S[0] < utilization_threshold * c.C * c.T)
 
     make_periodic(c,s,v,dur)
 
     qres = run_query(s, c, timeout=1200)
     return qres, c
 
-def run_abr_buffering_query(cca, abr, buffering_timesteps):
+def run_abr_buffering_query(cca, abr, compose, buffering_timesteps):
     from cache import run_query
     from utils import make_periodic
 
@@ -91,7 +94,7 @@ def run_abr_buffering_query(cca, abr, buffering_timesteps):
                     buf_max=None, # infinity
                     dupacks=None,
                     cca=cca, # only rocc and aimd are good in the compose=true model, copa in compose=false
-                    compose=False, # whether the model admits multiple network elements (composition property)
+                    compose=compose, # whether the model admits multiple network elements (composition property)
                     alpha=None,
                     pacing=False,
                     epsilon="zero",
@@ -142,38 +145,37 @@ def run_abr_buffering_query(cca, abr, buffering_timesteps):
     return qres, c
 
 
-if __name__ == "__main__":
-    # for utilization_threshold in [0.1, 0.25, 0.5, 0.6]:
-    #     print(f"\n\n\nutilization_threshold = {utilization_threshold}\n")
-    #     for cca in ["aimd", "rocc", "copa", "bbr"]:
-    #         for abr in ["bulk", "bb_abr"]:
-    #             print(f"cca = {cca}, abr = {abr}")
-    #             result, _ = run_abr_query(cca, abr, utilization_threshold)
-    #             if result is None:
-    #                 print("\t\terror\n")
-    #             else:
-    #                 print(f"\t\t{result.satisfiable}")
-    # for utilization_threshold in [0.1]:
-    #     print(f"\n\n\nutilization_threshold = {utilization_threshold}\n")
-    #     for cca in ["aimd"]:
-    #         for abr in ["bulk", "bb_abr"]:
-    #             print(f"cca = {cca}, abr = {abr}")
-    #             result, c = run_abr_utilization_query(cca, abr, utilization_threshold)
-    #             if result is None:
-    #                 print("\t\terror\n")
-    #             else:
-    #                 print(f"\t\t{result.satisfiable}")        
-    #                 if str(result.satisfiable) == "sat":
-    #                     plot_model(result.model, c)
+def run_util_queries(print_counterexample=False):
+    for utilization_threshold in [0.1]: #, 0.25, 0.5, 0.6]:
+        print(f"\n\n\nutilization_threshold = {utilization_threshold}\n")
+        for cca in ["aimd"]:
+            for abr in ["bulk", "bb_abr"]:
+                compose = True
+                print(f"cca = {cca},\tabr = {abr}\tcompose={compose}")
+                result, c = run_abr_utilization_query(cca, abr, compose, utilization_threshold)
+                if result is None:
+                    print("\terror\n")
+                else:
+                    print(f"\t{result.satisfiable}")        
+                    if print_counterexample and str(result.satisfiable) == "sat":
+                        plot_model(result.model, c)
+                        print("\n\n")
+
+def run_buffering_queuries(print_counterexample=False):
     for buffering_timesteps in [2,3,4,5]:
         print(f"\n\nbuffering_timesteps = {buffering_timesteps}\n")
         for cca in ["aimd"]:
             for abr in ["bb_abr"]:
-                print(f"cca = {cca}, abr = {abr}")
-                result, c = run_abr_buffering_query(cca, abr, buffering_timesteps)
+                compose = False
+                print(f"cca = {cca},\tabr = {abr},\tcompose={compose}")
+                result, c = run_abr_buffering_query(cca, abr, compose, buffering_timesteps)
                 if result is None:
-                    print("\t\terror\n")
+                    print("\terror\n")
                 else:
-                    print(f"\t\t{result.satisfiable}")
-                    if str(result.satisfiable) == "sat":
+                    print(f"\t{result.satisfiable}")
+                    if print_counterexample and str(result.satisfiable) == "sat":
                         plot_model(result.model, c)
+                        print("\n\n")
+
+if __name__ == "__main__":
+    run_util_queries(print_counterexample=True)
