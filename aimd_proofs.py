@@ -91,7 +91,7 @@ def prove_loss_bounds(timeout: float):
     # Lemma's statement's converse
     s.add(Or(
         v.L_f[0][-1] - v.Ld_f[0][-1] > max_undet(v),
-        #v.c_f[0][-1] > max_cwnd(v)
+        v.c_f[0][-1] > max_cwnd(v)
         ))
     print("Proving that if AIMD enters steady state, it will remain there")
     print(f"max_cwnd = {max_cwnd(v)}, max_undet = {max_undet(v)}")

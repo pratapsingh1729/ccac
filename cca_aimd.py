@@ -29,13 +29,14 @@ def can_incr(
         '''To make it app-safe, we add the condition that (inflight >= cwnd OR bytes_ready_to_send > 0),
         either of which being true indicates that cwnd is the bottleneck on the send rate
         '''
-        if c.app == "bulk" or not appsafe:
+        if appsafe and c.app != "bulk" and t > c.R:
+            return v.S_f[n][t - c.R] - v.S_f[n][t - c.R - 1] >= 0.5 * v.c_f[n][t]
+            # return v.A_f[n][t] - v.Ld_f[n][t] - v.S_f[n][t-c.R] > 0.5 * v.c_f[n][t]
+            # return Or(v.A_f[n][t] - v.Ld_f[n][t] - v.S_f[n][t - c.R] > v.c_f[n][t],
+            #           v.av[n].snd[t] > v.A_f[n][t])            
+        else:
             # bytes_ready_to_send is infinite, so we can always increase cwnd
             return True
-        else:
-            # return v.A_f[n][t] - v.Ld_f[n][t] - v.S_f[n][t-c.R] > 0.5 * v.c_f[n][t]
-            return Or(v.A_f[n][t] - v.Ld_f[n][t] - v.S_f[n][t - c.R] > v.c_f[n][t],
-                      v.av[n].snd[t] > v.A_f[n][t])
 
     for n in range(c.N):
         for t in range(1, c.T):
