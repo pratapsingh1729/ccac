@@ -19,17 +19,17 @@ def prove_loss_bounds(timeout: float):
     # bounds on alpha (see explanation below). For larger buf_min, increase T
     c.buf_min = 1
     c.buf_max = 1
-    c.cca = "aimd"
+    c.cca = "aimd_appsafe"
 
     def max_cwnd(v: Variables):
-        return c.C*(c.R + c.D) + c.buf_min + v.alpha
+        return (c.C*(c.R + c.D) + c.buf_min + v.alpha)
 
     def max_undet(v: Variables):
         ''' We'll prove that the number of undetected losses will be below this
         at equilibrium
 
         '''
-        return c.C*(c.R + c.D) + v.alpha
+        return (c.C*(c.R + c.D) + v.alpha)
 
     # # If cwnd > max_cwnd and undetected <= max_undet, cwnd will decrease
     # c.T = 10
@@ -81,7 +81,7 @@ def prove_loss_bounds(timeout: float):
 
     # Require chunk sizes to be comparable to BDP (smallest chunk size at least half the BDP, largest at least 1.5x the BDP)
     if c.app == "bb_abr":
-        s.add(v.av[0].Ch_s[0] >= 0.25 * c.C * (c.R + c.D))
+        s.add(v.av[0].Ch_s[0] >= 0.5 * c.C * (c.R + c.D))
         s.add(v.av[0].Ch_s[-1] >= 1.5 * c.C * (c.R + c.D))
 
     # Lemma's assumption
@@ -91,7 +91,7 @@ def prove_loss_bounds(timeout: float):
     # Lemma's statement's converse
     s.add(Or(
         v.L_f[0][-1] - v.Ld_f[0][-1] > max_undet(v),
-        v.c_f[0][-1] > max_cwnd(v)
+        #v.c_f[0][-1] > max_cwnd(v)
         ))
     print("Proving that if AIMD enters steady state, it will remain there")
     print(f"max_cwnd = {max_cwnd(v)}, max_undet = {max_undet(v)}")

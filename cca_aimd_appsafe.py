@@ -16,8 +16,7 @@ def can_incr(
         c: ModelConfig,
         s: MySolver,
         v: Variables,
-        cv: AIMDVariables,
-        appsafe = False):
+        cv: AIMDVariables):
     # Always increase
     if c.aimd_incr_irrespective: # if true, essentially becomes like cubic --- growth function is of time rather than bytes acked
         for n in range(c.N):
@@ -29,13 +28,12 @@ def can_incr(
         '''To make it app-safe, we add the condition that (inflight >= cwnd OR bytes_ready_to_send > 0),
         either of which being true indicates that cwnd is the bottleneck on the send rate
         '''
-        if c.app == "bulk" or not appsafe:
+        if c.app == "bulk":
             # bytes_ready_to_send is infinite, so we can always increase cwnd
             return True
         else:
-            # return v.A_f[n][t] - v.Ld_f[n][t] - v.S_f[n][t-c.R] > 0.5 * v.c_f[n][t]
-            return Or(v.A_f[n][t] - v.Ld_f[n][t] - v.S_f[n][t - c.R] > v.c_f[n][t],
-                      v.av[n].snd[t] > v.A_f[n][t])
+            return Or(v.A_f[n][t] - v.Ld_f[n][t] - v.S_f[n][t - c.R] >= v.c_f[n][t],
+                        v.av[n].snd[t] > v.A_f[n][t])
 
     for n in range(c.N):
         for t in range(1, c.T):
@@ -53,23 +51,22 @@ def can_incr(
                     And([v.c_f[n][t-ddt] == v.c_f[n][t]
                          for ddt in range(1, dt+1)]),
                     v.c_f[n][t-dt-1] != v.c_f[n][t-dt],
-                    v.S_f[n][t] - v.S_f[n][t-dt] >= v.c_f[n][t],
-                    app_safe_cond(n, t)))
+                    v.S_f[n][t] - v.S_f[n][t-dt] >= v.c_f[n][t]),
+                    app_safe_cond(n, t))
             incr.append(And(
                 And([v.c_f[n][t-ddt] == v.c_f[n][t]
                      for ddt in range(1, t+1)]),
-                v.S_f[n][t] - v.S_f[n][0] >= v.c_f[n][t],
-                app_safe_cond(n, t)))
+                v.S_f[n][t] - v.S_f[n][0] >= v.c_f[n][t]),
+                app_safe_cond(n, t))
             incr.append(And(
-                v.S_f[n][t] - v.S_f[n][t-1] >= v.c_f[n][t],
-                app_safe_cond(n, t)))
+                v.S_f[n][t] - v.S_f[n][t-1] >= v.c_f[n][t]),
+                app_safe_cond(n, t))
             s.add(cv.incr_f[n][t] == Or(*incr))
 
 
-
-def cca_aimd(c: ModelConfig, s: MySolver, v: Variables, appsafe = False) -> AIMDVariables:
+def cca_aimd(c: ModelConfig, s: MySolver, v: Variables) -> AIMDVariables:
     cv = AIMDVariables(c, s)
-    can_incr(c, s, v, cv, appsafe)
+    can_incr(c, s, v, cv)
 
     # The last send sequence number at which loss was detected
     ll = [[s.Real(f"last_loss_{n},{t}") for t in range(c.T)]

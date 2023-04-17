@@ -255,25 +255,6 @@ def make_solver(c: ModelConfig) -> (MySolver, Variables):
         assert (c.calculate_qdel)
         multi_flows(c, s, v)
 
-    if c.cca == "const":
-        cca_const(c, s, v)
-    elif c.cca == "aimd":
-        v.cv = cca_aimd(c, s, v)
-    elif c.cca == "bbr":
-        cca_bbr(c, s, v)
-    elif c.cca == "copa":
-        cca_copa(c, s, v)
-    elif c.cca == "fair":
-        cca_fair(c, s, v)
-    elif c.cca == "rocc":
-        v.cv = cca_rocc(c, s, v)
-    elif c.cca == "conv":
-        v.cv = cca_conv(c, s, v)
-    elif c.cca == "any":
-        pass
-    else:
-        assert (False)
-
     if c.app == "bulk":
         pass
     elif c.app == "bb_abr":
@@ -293,6 +274,27 @@ def make_solver(c: ModelConfig) -> (MySolver, Variables):
             v.av.append(av)
     else:
         assert False, f"Unrecognized app: {c.app}"
+
+    if c.cca == "const":
+        cca_const(c, s, v)
+    elif c.cca == "aimd":
+        v.cv = cca_aimd(c, s, v)
+    elif c.cca == "aimd_appsafe":
+        v.cv = cca_aimd(c, s, v, appsafe=True)
+    elif c.cca == "bbr":
+        cca_bbr(c, s, v)
+    elif c.cca == "copa":
+        cca_copa(c, s, v)
+    elif c.cca == "fair":
+        cca_fair(c, s, v)
+    elif c.cca == "rocc":
+        v.cv = cca_rocc(c, s, v)
+    elif c.cca == "conv":
+        v.cv = cca_conv(c, s, v)
+    elif c.cca == "any":
+        pass
+    else:
+        assert (False)
 
     cwnd_rate_arrival(c, s, v)
 

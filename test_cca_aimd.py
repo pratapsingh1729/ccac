@@ -9,7 +9,7 @@ from my_solver import MySolver
 
 
 class TestCCAAimd(unittest.TestCase):
-    def test_can_incr(self):
+    def helper_test_can_incr(self, appsafe):
         def create():
             c = ModelConfig.default()
             c.aimd_incr_irrespective = False
@@ -29,14 +29,14 @@ class TestCCAAimd(unittest.TestCase):
         # There exists a network trace where cwnd can increase
         c, s, v = create()
         cv = AIMDVariables(c, s)
-        can_incr(c, s, v, cv)
+        can_incr(c, s, v, cv, appsafe)
         s.add(Or(*[cv.incr_f[0][t] for t in range(c.T)]))
         sat = s.check()
         self.assertEqual(str(sat), "sat")
 
         # If S increases enough, cwnd will always increase
         c, s, v = create()
-        cv = cca_aimd(c, s, v)
+        cv = cca_aimd(c, s, v, appsafe)
         conds = []
         for t in range(4, 5):  # range(1, c.T):
             conds.append(And(
@@ -45,6 +45,12 @@ class TestCCAAimd(unittest.TestCase):
         s.add(Or(*conds))
         sat = s.check()
         self.assertEqual(str(sat), "unsat")
+    
+    def test_can_incr(self):
+        self.helper_test_can_incr(False)
+    
+    def test_can_incr_appsafe(self):
+        self.helper_test_can_incr(True)
 
 
 if __name__ == '__main__':
