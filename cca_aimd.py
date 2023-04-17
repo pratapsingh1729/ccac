@@ -10,6 +10,7 @@ class AIMDVariables:
         # Whether or not cwnd can increase at this point
         self.incr_f = [[s.Bool(f"aimd_incr_{n},{t}") for t in range(c.T)]
                        for n in range(c.N)]
+        self.pipeACK_f = [[s.Int(f"aimd_pipeACK_{n},{t}") for t in range(c.T) for n in range(c.N)]]
 
 
 def can_incr(
@@ -24,13 +25,14 @@ def can_incr(
             for t in range(c.T):
                 s.add(cv.incr_f[n][t])
         return
+    
 
     def app_safe_cond(n, t):
         '''To make it app-safe, we add the condition that (inflight >= cwnd OR bytes_ready_to_send > 0),
         either of which being true indicates that cwnd is the bottleneck on the send rate
         '''
         if appsafe and c.app != "bulk" and t > c.R:
-            return v.S_f[n][t - c.R] - v.S_f[n][t - c.R - 1] >= 0.5 * v.c_f[n][t]
+            return cv.pipeACK_f[n][t] >= 0.5 * v.c_f[n][t]
             # return v.A_f[n][t] - v.Ld_f[n][t] - v.S_f[n][t-c.R] > 0.5 * v.c_f[n][t]
             # return Or(v.A_f[n][t] - v.Ld_f[n][t] - v.S_f[n][t - c.R] > v.c_f[n][t],
             #           v.av[n].snd[t] > v.A_f[n][t])            
@@ -96,6 +98,9 @@ def cca_aimd(c: ModelConfig, s: MySolver, v: Variables, appsafe = False) -> AIMD
                     )
                 else:
                     decrease = v.Ld_f[n][t] > v.Ld_f[n][t-1]
+
+                if t > c.R:
+                    s.add(cv.pipeACK_f[n][t] == v.S_f[n][t - c.R] - v.S_f[n][t-1 - c.R])
 
                 s.add(Implies(
                     And(decrease, Not(v.timeout_f[n][t])),
