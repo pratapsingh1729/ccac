@@ -66,6 +66,10 @@ def initial(ac: BufferBasedConfig, av: BufferBasedVariables, c: ModelConfig,
     s.add(av.Ch_t[1] > 0)
     s.add(Or(*[av.snd[0] == av.Ch_s[i] for i in range(ac.N_c)]))
     s.add(av.b[0] >= 0)
+            
+    # Chunk thresholding scheme
+    # for i in range(ac.N_c - 1):
+    #     s.add(av.Ch_s[i+1] <= c.C * (av.Ch_t[i+1] - av.chunk_time))
 
 
 def monotone(ac: BufferBasedConfig, av: BufferBasedVariables, c: ModelConfig,

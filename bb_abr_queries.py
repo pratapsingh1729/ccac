@@ -90,7 +90,7 @@ def run_abr_buffering_query(cca, abr, compose, buffering_timesteps):
                     R=1,
                     T=10,
                     C=1,
-                    buf_min=2,
+                    buf_min=1,
                     buf_max=None, # infinity
                     dupacks=None,
                     cca=cca, # only rocc and aimd are good in the compose=true model, copa in compose=false
@@ -124,6 +124,13 @@ def run_abr_buffering_query(cca, abr, compose, buffering_timesteps):
     s.add(v.alpha <= 0.25 * c.C * c.R)
     # s.add(v.L[0] == 0)
 
+    # Require chunk sizes to be comparable to BDP (smallest chunk size at least half the BDP, largest at least 1.5x the BDP)
+    if abr=="bb_abr":
+        s.add(v.av[0].Ch_s[0] >= 0.5 * c.C * (c.R + c.D))
+        s.add(v.av[0].Ch_s[0] <= c.C * (c.R + c.D))
+        #s.add(v.av[0].Ch_s[-1] <= 0.25 * c.C * (c.R + c.D))
+        #pass
+
     # We don't want an example with timeouts
     for t in range(c.T):
         s.add(Not(v.timeout_f[0][t]))
@@ -137,7 +144,7 @@ def run_abr_buffering_query(cca, abr, compose, buffering_timesteps):
     s.add(Or(*conds))
 
     # don't include initial buffering
-    s.add(v.av[0].b[0] != 0)
+    s.add(v.av[0].b[0] >= v.av[0].chunk_time)
 
     make_periodic(c,s,v,dur)
 
@@ -161,12 +168,12 @@ def run_util_queries(print_counterexample=False):
                         plot_model(result.model, c)
                         print("\n\n")
 
-def run_buffering_queuries(print_counterexample=False):
-    for buffering_timesteps in [2,3,4,5]:
+def run_buffering_queries(print_counterexample=False):
+    for buffering_timesteps in [2]:
         print(f"\n\nbuffering_timesteps = {buffering_timesteps}\n")
         for cca in ["aimd"]:
             for abr in ["bb_abr"]:
-                compose = False
+                compose = True
                 print(f"cca = {cca},\tabr = {abr},\tcompose={compose}")
                 result, c = run_abr_buffering_query(cca, abr, compose, buffering_timesteps)
                 if result is None:
@@ -178,4 +185,4 @@ def run_buffering_queuries(print_counterexample=False):
                         print("\n\n")
 
 if __name__ == "__main__":
-    run_util_queries(print_counterexample=True)
+    run_buffering_queries(print_counterexample=True)
