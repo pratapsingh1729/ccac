@@ -19,7 +19,7 @@ def prove_loss_bounds(timeout: float):
     # bounds on alpha (see explanation below). For larger buf_min, increase T
     c.buf_min = 1
     c.buf_max = 1
-    c.cca = "aimd_appsafe"
+    c.cca = "aimd"
 
     def max_cwnd(v: Variables):
         return (c.C*(c.R + c.D) + c.buf_min + v.alpha)
@@ -48,13 +48,13 @@ def prove_loss_bounds(timeout: float):
     # print(qres.satisfiable)
     # assert(qres.satisfiable == "unsat")
 
-    # # If undetected > max_undet, either undetected will fall by at least C
-    # # bytes (and cwnd won't exceed max_cwnd) or it might not if initial cwnd >
-    # # max_cwnd. In the latter case, cwnd would decrease by the end
+    # If undetected > max_undet, either undetected will fall by at least C
+    # bytes (and cwnd won't exceed max_cwnd) or it might not if initial cwnd >
+    # max_cwnd. In the latter case, cwnd would decrease by the end
 
-    # # Note: this lemma by itself proves that undetected will eventually fall
-    # # below max_undet. Then, coupled with the above lemma, we have that AIMD
-    # # will always enter steady state
+    # Note: this lemma by itself proves that undetected will eventually fall
+    # below max_undet. Then, coupled with the above lemma, we have that AIMD
+    # will always enter steady state
     # s, v = make_solver(c)
     # # Lemma's assumption
     # min_send_quantum(c, s, v)
@@ -73,7 +73,7 @@ def prove_loss_bounds(timeout: float):
 
     # If we are in steady state, we'll remain there. In steady state: cwnd <=
     # max_cwnd, undetected <= max_undet
-    c.T = 10
+    c.T = 12
 
     c.app = "bb_abr"
 
@@ -90,8 +90,8 @@ def prove_loss_bounds(timeout: float):
     s.add(v.alpha < 1 / 3)
     # Lemma's statement's converse
     s.add(Or(
-        v.L_f[0][-1] - v.Ld_f[0][-1] > max_undet(v),
-        v.c_f[0][-1] > max_cwnd(v)
+        v.L_f[0][-3] - v.Ld_f[0][-3] > max_undet(v),
+        # v.c_f[0][-3] > max_cwnd(v)
         ))
     print("Proving that if AIMD enters steady state, it will remain there")
     print(f"max_cwnd = {max_cwnd(v)}, max_undet = {max_undet(v)}")
@@ -99,6 +99,42 @@ def prove_loss_bounds(timeout: float):
     print(qres.satisfiable)
     if (qres.satisfiable != "unsat"):
         plot_model(qres.model, c)
+
+
+    # Prove that when app-limited, cwnd does not increase
+    # c.T = 10
+
+    # c.app = "bb_abr"
+
+    # s, v = make_solver(c)
+
+    # # Require chunk sizes to be comparable to BDP (smallest chunk size at least half the BDP, largest at least 1.5x the BDP)
+    # if c.app == "bb_abr":
+    #     s.add((v.av[0].Ch_s[0] + c.buf_min) / c.C + c.D <= v.av[0].chunk_time)
+    #     for i in range(1, c.ac[0].N_c):
+    #         # s.add(v.av[0].Ch_t[i] > c.D + ((v.av[0].Ch_s[i] + 5*c.buf_min) * (1 + c.ac[0].chunk_margin)) / c.C)
+    #         s.add(v.av[0].Ch_t[i] > ((v.av[0].Ch_s[i])) / c.C)
+    #     # s.add(v.av[0].Ch_s[0] >= 0.5 * c.C * (c.R + c.D))
+    #     # s.add(v.av[0].Ch_s[-1] >= 1.5 * c.C * (c.R + c.D))
+
+    # # Lemma's assumption
+    # s.add(v.L_f[0][0] - v.Ld_f[0][0] <= max_undet(v))
+    # s.add(v.c_f[0][0] <= max_cwnd(v))
+    # s.add(v.alpha < 1 / 3)
+    # for t in range(c.T):
+    #     # App is rate-limiting the whole way through 
+    #     s.add(v.A_f[0][t] >= v.av[0].snd[t])
+    # # Lemma's statement's converse
+    # s.add(
+    #     v.c_f[0][-1] > v.c_f[0][3]
+    #     )
+    # print("Proving that when AIMD is app-limited, cwnd does not increase")
+    # # print(f"max_cwnd = {max_cwnd(v)}, max_undet = {max_undet(v)}")
+    # qres = run_query(s, c, timeout)
+    # print(qres.satisfiable)
+    # if (qres.satisfiable != "unsat"):
+    #     plot_model(qres.model, c)
+
 
     # # Prove a theorem about when loss can happen using this steady state
     # c.T = 10

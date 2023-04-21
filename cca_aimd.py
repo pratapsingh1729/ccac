@@ -35,7 +35,7 @@ def can_incr(
             return cv.pipeACK_f[n][t] >= 0.5 * v.c_f[n][t]
             # return v.A_f[n][t] - v.Ld_f[n][t] - v.S_f[n][t-c.R] > 0.5 * v.c_f[n][t]
             # return And(v.A_f[n][t] - v.Ld_f[n][t] - v.S_f[n][t - c.R] > v.c_f[n][t],
-            #           v.av[n].snd[t] > v.A_f[n][t])            
+            #            v.av[n].snd[t] > v.A_f[n][t])            
         else:
             # bytes_ready_to_send is infinite, so we can always increase cwnd
             return True

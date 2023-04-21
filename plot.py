@@ -114,16 +114,18 @@ def plot_model(m: ModelDict, cfg: ModelConfig):
         print("Max rate = ", m["conv_max_rate"])
     if cfg.app == "bb_abr":
         for n in range(cfg.N):
-            print("Chunk time = ", m[f"chunk_time_{n}"])
+            print("Chunk time = ", float(m[f"chunk_time_{n}"]))
             print("Chunk sizes = ",
-                  [str(m[f"chunk_size_{n},{i}"])
+                  [str(float(m[f"chunk_size_{n},{i}"]))
                    for i in range(cfg.ac[n].N_c)])
             print("Chunk threshes = ", [0] +
-                  [str(m[f"chunk_thresh_{n},{i}"])
+                  [str(float(m[f"chunk_thresh_{n},{i}"]))
                    for i in range(1, cfg.ac[n].N_c)])
         per_flow.extend(["buffer", "app_snd", "chunk_chosen", "chunk_fin"])
     if cfg.app == "panteabr":
         per_flow.extend(["app_encoded_tot", "app_actually_sent", "app_encoded"])
+    if cfg.cca == "aimd_appsafe":
+        per_flow.extend(["aimd_pipeACK"])
 
     cols: List[Tuple[str, Optional[int]]] = [(x, None) for x in col_names]
     for n in range(cfg.N):
